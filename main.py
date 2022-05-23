@@ -87,9 +87,15 @@ def main(url: str) -> None:
         # download_img(url_img)
 
         comments_text = soup.find("div", id="content").find_all("div", class_="texts")
-        print(title)
-        for comment in comments_text:
-            print(comment.find("span", class_="black").text)
+
+        # for comment in comments_text:
+        #     print(comment.find("span", class_="black").text)
+
+        genres_text = soup.find("div", id="content").find("span", class_="d_book").find_all("a")
+        genres_text = [genre.text for genre in genres_text]
+
+        print(f"Заголовок: {title}")
+        print(genres_text)
         print()
 
 
