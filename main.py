@@ -83,8 +83,14 @@ def main(url: str) -> None:
         url_txt = f"{url}txt.php?id={index}"
         filename_text = f"{index}. {title}"
 
-        download_txt(url_txt, filename_text)
-        download_img(url_img)
+        # download_txt(url_txt, filename_text)
+        # download_img(url_img)
+
+        comments_text = soup.find("div", id="content").find_all("div", class_="texts")
+        print(title)
+        for comment in comments_text:
+            print(comment.find("span", class_="black").text)
+        print()
 
 
 if __name__ == "__main__":
