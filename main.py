@@ -1,5 +1,6 @@
 import requests
 import os
+import argparse
 from pathlib import Path
 from bs4 import BeautifulSoup
 from typing import Optional
@@ -82,10 +83,10 @@ def parse_book_page(html_content) -> dict:
     return parse_page
 
 
-def main() -> None:
+def main(start_page: int, end_page: int) -> None:
     url = "https://tululu.org/"
 
-    for index in range(1, 11):
+    for index in range(start_page, end_page):
         link_page = f"{url}/b{index}/"
         response = requests.get(link_page)
         response.raise_for_status()
@@ -104,4 +105,21 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(
+        description="Программа парсинга книг с сайта tululu.org"
+    )
+    parser.add_argument("-s",
+                        "--start_id",
+                        default="1",
+                        help="С какой страницы начать парсинг",
+                        )
+    parser.add_argument("-e",
+                        "--end_id",
+                        default="11",
+                        help="На какой страницы закончить парсинг",
+                        )
+    args = parser.parse_args()
+    start_id = int(args.start_id)
+    end_id = int(args.end_id)
+
+    main(start_id, end_id)
