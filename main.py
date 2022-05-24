@@ -59,48 +59,49 @@ def download_img(url: str, folder: str = "images/") -> Optional[str]:
     return path_filename
 
 
-def main(url: str) -> None:
+def parse_book_page(html_content) -> dict:
+    parse_page = {}
+
+    soup = BeautifulSoup(html_content.text, "lxml")
+
+    title_text = soup.find(id="content").find("h1").text
+    parse_page["title"] = title_text.split("\xa0 :: \xa0")[0].strip()
+    parse_page["author"] = title_text.split("\xa0 :: \xa0")[1].strip()
+
+    parse_page["link_img"] = soup.find("div", class_="bookimage").find("img")["src"]
+
+    comments_text = soup.find("div", id="content").find_all("div", class_="texts")
+    comments = []
+    for comment in comments_text:
+        comments.append(comment.find("span", class_="black").text)
+    parse_page["comments"] = comments
+
+    genres_text = soup.find("div", id="content").find("span", class_="d_book").find_all("a")
+    parse_page["genres_text"] = [genre.text for genre in genres_text]
+
+    return parse_page
+
+
+def main() -> None:
+    url = "https://tululu.org/"
 
     for index in range(1, 11):
-        url_page = f"{url}/b{index}/"
-        response = requests.get(url_page)
+        link_page = f"{url}/b{index}/"
+        response = requests.get(link_page)
         response.raise_for_status()
 
         try:
             check_for_redirect(response)
+            parse_book = parse_book_page(response)
         except requests.HTTPError:
             continue
 
-        soup = BeautifulSoup(response.text, "lxml")
-
-        title_text = soup.find(id="content").find("h1").text
-
-        title = title_text.split("\xa0 :: \xa0")[0].strip()
-
-        link_img = soup.find("div", class_="bookimage").find("img")["src"]
-        url_img = urljoin(url, link_img)
-
         url_txt = f"{url}txt.php?id={index}"
-        filename_text = f"{index}. {title}"
+        filename_text = f"{index}. {parse_book['title']}"
 
-        # download_txt(url_txt, filename_text)
-        # download_img(url_img)
-
-        comments_text = soup.find("div", id="content").find_all("div", class_="texts")
-
-        # for comment in comments_text:
-        #     print(comment.find("span", class_="black").text)
-
-        genres_text = soup.find("div", id="content").find("span", class_="d_book").find_all("a")
-        genres_text = [genre.text for genre in genres_text]
-
-        print(f"Заголовок: {title}")
-        print(genres_text)
-        print()
+        download_txt(url_txt, filename_text)
+        download_img(urljoin(url, parse_book["link_img"]))
 
 
 if __name__ == "__main__":
-
-    url = "https://tululu.org/"
-
-    main(url)
+    main()
