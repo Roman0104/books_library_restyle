@@ -7,10 +7,9 @@
 
 ### Как установить
 
-Для запуска нужен Python 3 и дополнительно необходимо скачать библиотеки:
-- requests==2.27.1
-- beautifulsoup4==4.11.1
-- urllib3==1.26.9
+Для запуска нужен Python 3, для установки библиотек используйте в консоли 
+команду `python -m pip install -r requirements.txt` 
+или `pip install -r requirements.txt`  
 
 ### Аргументы
 

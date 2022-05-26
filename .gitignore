@@ -13,3 +13,5 @@ media/
 books/
 bs4_tutorial.py
 images/
+*.svg
+*.log

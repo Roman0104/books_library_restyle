@@ -1,11 +1,15 @@
-import requests
-import os
 import argparse
+import logging
+import os
+import sys
+import time
 from pathlib import Path
-from bs4 import BeautifulSoup
 from typing import Optional
-from pathvalidate import sanitize_filename
 from urllib.parse import urljoin, urlsplit
+
+import requests
+from bs4 import BeautifulSoup
+from pathvalidate import sanitize_filename
 
 
 def check_for_redirect(response):
@@ -13,22 +17,20 @@ def check_for_redirect(response):
         raise requests.HTTPError()
 
 
-def download_txt(url: str, filename: str, folder: str = "books/") -> Optional[str]:
+def download_txt(url: str, book_id: int, filename: str, folder: str = "books/") -> Optional[str]:
     """Функция для скачивания текстовых файлов.
     Args:
         url (str): Cсылка на текст, который хочется скачать.
+        book_id: Номер книги
         filename (str): Имя файла, с которым сохранять.
         folder (str): Папка, куда сохранять.
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
-    response = requests.get(url)
+    response = requests.get(url+"txt.php", params={"id": book_id})
     response.raise_for_status()
 
-    try:
-        check_for_redirect(response)
-    except requests.HTTPError:
-        return
+    check_for_redirect(response)
 
     Path(folder).mkdir(parents=True, exist_ok=True)
 
@@ -61,65 +63,95 @@ def download_img(url: str, folder: str = "images/") -> Optional[str]:
 
 
 def parse_book_page(html_content) -> dict:
-    parse_page = {}
 
     soup = BeautifulSoup(html_content.text, "lxml")
 
     title_text = soup.find(id="content").find("h1").text
-    parse_page["title"] = title_text.split("\xa0 :: \xa0")[0].strip()
-    parse_page["author"] = title_text.split("\xa0 :: \xa0")[1].strip()
+    title = title_text.split("\xa0 :: \xa0")[0].strip()
+    author = title_text.split("\xa0 :: \xa0")[1].strip()
 
-    parse_page["link_img"] = soup.find("div", class_="bookimage").find("img")["src"]
+    link_img = soup.find("div", class_="bookimage").find("img")["src"]
 
     comments_text = soup.find("div", id="content").find_all("div", class_="texts")
-    comments = []
-    for comment in comments_text:
-        comments.append(comment.find("span", class_="black").text)
-    parse_page["comments"] = comments
+    comments = [comment.find("span", class_="black").text for comment in comments_text]
 
-    genres_text = soup.find("div", id="content").find("span", class_="d_book").find_all("a")
-    parse_page["genres_text"] = [genre.text for genre in genres_text]
+    genres_text = [genre.text for genre in soup.find("div", id="content").find("span", class_="d_book").find_all("a")]
+
+    parse_page = {
+        "title": title,
+        "author": author,
+        "link_img": link_img,
+        "comments": comments,
+        "genres_text": genres_text,
+    }
 
     return parse_page
 
 
-def main(start_page: int, end_page: int) -> None:
-    url = "https://tululu.org/"
+def main() -> None:
+    logger = logging.getLogger("books_parser")
+    logger.setLevel(logging.INFO)
+    file_handler = logging.FileHandler("main.log",
+                                       mode='w',
+                                       encoding='utf-8', )
+    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
 
-    for index in range(start_page, end_page):
-        link_page = f"{url}/b{index}/"
-        response = requests.get(link_page)
-        response.raise_for_status()
-
-        try:
-            check_for_redirect(response)
-            parse_book = parse_book_page(response)
-        except requests.HTTPError:
-            continue
-
-        url_txt = f"{url}txt.php?id={index}"
-        filename_text = f"{index}. {parse_book['title']}"
-
-        download_txt(url_txt, filename_text)
-        download_img(urljoin(url, parse_book["link_img"]))
-
-
-if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Программа парсинга книг с сайта tululu.org"
     )
     parser.add_argument("-s",
                         "--start_id",
-                        default="1",
+                        type=int,
+                        default=1,
                         help="С какой страницы начать парсинг",
                         )
     parser.add_argument("-e",
                         "--end_id",
-                        default="11",
+                        type=int,
+                        default=11,
                         help="На какой страницы закончить парсинг",
                         )
     args = parser.parse_args()
-    start_id = int(args.start_id)
-    end_id = int(args.end_id)
+    logger.info(f"start_id = {args.start_id}, end_id = {args.end_id}")
 
-    main(start_id, end_id)
+    url = "https://tululu.org/"
+
+    for index in range(args.start_id, args.end_id):
+        link_page = f"{url}/b{index}/"
+        try:
+            response = requests.get(link_page)
+            response.raise_for_status()
+            check_for_redirect(response)
+        except requests.exceptions.ConnectionError:
+            sys.stderr.write(f"Ошибка соединения на {index} книге\n")
+            logger.error(f"Ошибка соединения на {index} книге")
+            time.sleep(3)
+            continue
+        except requests.exceptions.HTTPError:
+            sys.stderr.write(f"Ошибка на странице {index} книги\n")
+            logger.error(f"Ошибка на странице {index} книги")
+            continue
+
+        parse_book = parse_book_page(response)
+        filename_text = f"{index}. {parse_book['title']}"
+
+        try:
+            download_txt(url, index, filename_text)
+            download_img(urljoin(link_page, parse_book["link_img"]))
+        except requests.exceptions.ConnectionError:
+            sys.stderr.write(f"Ошибка соединения при скачивании {index} книги\n")
+            logger.error(f"Ошибка соединения при скачивании {index} книги")
+            time.sleep(3)
+            continue
+        except requests.exceptions.HTTPError:
+            sys.stderr.write(f"Ошибка на странице при скачивании {index} книги\n")
+            logger.error(f"Ошибка на странице при скачивании {index} книги")
+            continue
+
+        logger.info(f"Парсер успешно скачал книгу {index}")
+
+
+if __name__ == "__main__":
+    main()
