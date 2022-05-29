@@ -134,12 +134,12 @@ def main() -> None:
             logger.error(f"Ошибка на странице {index} книги")
             continue
 
-        parse_book = parse_book_page(response)
-        filename_text = f"{index}. {parse_book['title']}"
+        book_parse = parse_book_page(response)
+        book_filename = f"{index}. {book_parse['title']}"
 
         try:
-            download_txt(url, index, filename_text)
-            download_img(urljoin(link_page, parse_book["link_img"]))
+            download_txt(url, index, book_filename)
+            download_img(urljoin(link_page, book_parse["link_img"]))
         except requests.exceptions.ConnectionError:
             sys.stderr.write(f"Ошибка соединения при скачивании {index} книги\n")
             logger.error(f"Ошибка соединения при скачивании {index} книги")
