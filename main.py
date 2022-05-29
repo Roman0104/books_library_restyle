@@ -27,7 +27,7 @@ def download_txt(url: str, book_id: int, filename: str, folder: str = "books/") 
     Returns:
         str: Путь до файла, куда сохранён текст.
     """
-    response = requests.get(url+"txt.php", params={"id": book_id})
+    response = requests.get(f"{url}txt.php", params={"id": book_id})
     response.raise_for_status()
 
     check_for_redirect(response)
