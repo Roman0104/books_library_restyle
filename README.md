@@ -8,8 +8,14 @@
 ### Как установить
 
 Для запуска нужен Python 3, для установки библиотек используйте в консоли 
-команду `python -m pip install -r requirements.txt` 
-или `pip install -r requirements.txt`  
+команду 
+~~~ python
+python -m pip install -r requirements.txt
+~~~ 
+или 
+~~~ python
+pip install -r requirements.txt
+~~~
 
 ### Аргументы
 
