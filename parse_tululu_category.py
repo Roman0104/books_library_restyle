@@ -18,11 +18,11 @@ def main() -> None:
     logger.addHandler(file_handler)
 
     url = "https://tululu.org/"
-    book_collection = "l55"
-    link_collection = urljoin(url, book_collection)
+    book_category = "l55"
+    link_book_category = urljoin(url, book_category)
 
     try:
-        response = requests.get(link_collection)
+        response = requests.get(link_book_category)
         response.raise_for_status()
     except requests.exceptions.ConnectionError:
         sys.stderr.write(f"Ошибка соединения\n")
@@ -35,13 +35,12 @@ def main() -> None:
         return
 
     soup = BeautifulSoup(response.text, "lxml")
+    parse_content_table = soup.find(id="content").find_all("table")
 
-    book_id = soup.find(id="content").find_all("table")[0].find("a")["href"]
-    book_link = urljoin(url, book_id)
+    for book in parse_content_table:
+        print(urljoin(url, book.find("a")["href"]))
 
-    print(book_link)
-
-    logger.info(f"Ссылка на книгу {book_link}")
+    logger.info(f"Парсер успешно завершил работу")
 
 
 if __name__ == "__main__":
