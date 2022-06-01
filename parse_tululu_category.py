@@ -20,17 +20,17 @@ def check_for_redirect(response):
 
 def parse_book_page(html_content) -> dict:
 
-    soup = BeautifulSoup(html_content.text, "lxml")
+    soup = BeautifulSoup(html_content.text, "lxml").select_one(".ow_px_td")
 
-    title_text = soup.find(id="content").find("h1").text
-    comments_text = soup.find("div", id="content").find_all("div", class_="texts")
+    title_text = soup.select_one("h1").text
+    comments_text = soup.select("div .texts")
 
     parse_page = {
         "title": title_text.split("\xa0 :: \xa0")[0].strip(),
         "author": title_text.split("\xa0 :: \xa0")[1].strip(),
-        "link_img": soup.find("div", class_="bookimage").find("img")["src"],
-        "comments": [comment.find("span", class_="black").text for comment in comments_text],
-        "genres": [genre.text for genre in soup.find("div", id="content").find("span", class_="d_book").find_all("a")],
+        "link_img": soup.select_one(".bookimage img")["src"],
+        "comments": [comment.select_one("span.black").text for comment in comments_text],
+        "genres": [genre.text for genre in soup.select("span.d_book a")],
     }
 
     return parse_page
@@ -81,7 +81,6 @@ def download_img(url: str, folder: str = "images/") -> Optional[str]:
     return path_filename
 
 
-
 def main() -> None:
     logger = logging.getLogger("parse_tululu_category")
     logger.setLevel(logging.INFO)
@@ -114,13 +113,12 @@ def main() -> None:
             logger.error(f"Ошибка на странице")
             continue
 
-        soup = BeautifulSoup(response.text, "lxml")
-        parse_content_table = soup.find(id="content").find_all("table")
+        soup = BeautifulSoup(response.text, "lxml").select(".ow_px_td .d_book")
 
-        for book in parse_content_table:
-            book_href = book.find("a")["href"]
-            book_link = urljoin(url, book_href)
-            book_id = book_href[2:-1]
+        books_id = [id.select_one("a")["href"][2:-1] for id in soup]
+
+        for book_id in books_id:
+            book_link = urljoin(url, f"/b{book_id}/")
 
             try:
                 book_link_response = requests.get(book_link)
