@@ -91,26 +91,45 @@ def main() -> None:
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
+    parser = argparse.ArgumentParser(
+        description="Программа парсинга книг с сайта tululu.org по категориям"
+    )
+    parser.add_argument("-s",
+                        "--start_page",
+                        type=int,
+                        default=1,
+                        help="С какой страницы начать скачивать книги",
+                        )
+    parser.add_argument("-e",
+                        "--end_page",
+                        type=int,
+                        default=701,
+                        help="По какую страницу скачивать книги",
+                        )
+    args = parser.parse_args()
+    logger.info(f"start_page = {args.start_page}, end_page = {args.end_page}")
+
     url = "https://tululu.org/"
     book_category = "/l55/"
     link_category = urljoin(url, book_category)
 
     books_description = []
 
-    for page in range(1, 5):
+    for page in range(args.start_page, args.end_page + 1):
         link_category_page = urljoin(link_category, str(page))
 
         try:
             response = requests.get(link_category_page)
             response.raise_for_status()
+            check_for_redirect(response)
         except requests.exceptions.ConnectionError:
             sys.stderr.write(f"Ошибка соединения\n")
             logger.error(f"Ошибка соединения")
             time.sleep(3)
             continue
         except requests.exceptions.HTTPError:
-            sys.stderr.write(f"Ошибка на странице\n")
-            logger.error(f"Ошибка на странице")
+            sys.stderr.write(f"Ошибка на странице {link_category_page}\n")
+            logger.error(f"Ошибка на странице {link_category_page}")
             continue
 
         soup = BeautifulSoup(response.text, "lxml").select(".ow_px_td .d_book")
@@ -119,6 +138,7 @@ def main() -> None:
 
         for book_id in books_id:
             book_link = urljoin(url, f"/b{book_id}/")
+            print(book_link)
 
             try:
                 book_link_response = requests.get(book_link)
