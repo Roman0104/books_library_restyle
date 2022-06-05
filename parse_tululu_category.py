@@ -106,8 +106,35 @@ def main() -> None:
                         default=701,
                         help="По какую страницу скачивать книги",
                         )
+    parser.add_argument("-f",
+                        "--dest_folder",
+                        default="",
+                        help="Путь к каталогу с результатами парсинга: картинкам, книгам, JSON",
+                        )
+    parser.add_argument("-i",
+                        "--skip_imgs",
+                        action='store_true',
+                        help="Не скачивать картинки True или False",
+                        )
+    parser.add_argument("-t",
+                        "--skip_txt",
+                        action='store_true',
+                        help="Не скачивать книги True или False",
+                        )
+    parser.add_argument("-j",
+                        "--json_path",
+                        default="books_description",
+                        help="Путь к *.json файлу с результатами",
+                        )
     args = parser.parse_args()
-    logger.info(f"start_page = {args.start_page}, end_page = {args.end_page}")
+    dest_folder = f"{args.dest_folder}/" if args.dest_folder else ""
+    json_path = args.json_path
+    logger.info(f"start_page={args.start_page}, "
+                f"end_page={args.end_page}, "
+                f"dest_folder={args.dest_folder}, "
+                f"skip_imgs={args.skip_imgs}, "
+                f"skip_txt={args.skip_txt}"
+                )
 
     url = "https://tululu.org/"
     book_category = "/l55/"
@@ -115,7 +142,7 @@ def main() -> None:
 
     books_description = []
 
-    for page in range(args.start_page, args.end_page + 1):
+    for page in range(args.start_page, 2):#args.end_page + 1):
         link_category_page = urljoin(link_category, str(page))
 
         try:
@@ -136,7 +163,7 @@ def main() -> None:
 
         books_id = [id.select_one("a")["href"][2:-1] for id in soup]
 
-        for book_id in books_id:
+        for book_id in books_id[:2]:
             book_link = urljoin(url, f"/b{book_id}/")
             print(book_link)
 
@@ -158,8 +185,18 @@ def main() -> None:
             book_filename = f"{book_id}. {book_parse['title']}"
 
             try:
-                download_txt(url, book_id, book_filename)
-                download_img(urljoin(book_link, book_parse["link_img"]))
+                if not args.skip_txt:
+                    download_txt(
+                        url,
+                        book_id,
+                        book_filename,
+                        f"{dest_folder}books/"
+                    )
+                if not args.skip_imgs:
+                    download_img(
+                        urljoin(book_link, book_parse["link_img"]),
+                        f"{dest_folder}images/"
+                    )
             except requests.exceptions.ConnectionError:
                 sys.stderr.write(f"Ошибка соединения при скачивании {book_id} книги\n")
                 logger.error(f"Ошибка соединения при скачивании {book_id} книги")
@@ -174,7 +211,8 @@ def main() -> None:
 
         logger.info(f"Парсер успешно распарсил страницу {page}")
 
-    with open("books_description.json", "w", encoding="utf-8") as json_file:
+    json_path = f"{dest_folder}{json_path}.json"
+    with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(books_description, json_file, indent=2, ensure_ascii=False)
 
     logger.info("Парсер успешно завершил работу")
