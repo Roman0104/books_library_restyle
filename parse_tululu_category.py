@@ -114,12 +114,12 @@ def main() -> None:
     parser.add_argument("-i",
                         "--skip_imgs",
                         action='store_true',
-                        help="Не скачивать картинки True или False",
+                        help="Не скачивать картинки",
                         )
     parser.add_argument("-t",
                         "--skip_txt",
                         action='store_true',
-                        help="Не скачивать книги True или False",
+                        help="Не скачивать книги",
                         )
     parser.add_argument("-j",
                         "--json_path",
@@ -142,7 +142,7 @@ def main() -> None:
 
     books_description = []
 
-    for page in range(args.start_page, 2):#args.end_page + 1):
+    for page in range(args.start_page, args.end_page + 1):
         link_category_page = urljoin(link_category, str(page))
 
         try:
@@ -163,7 +163,7 @@ def main() -> None:
 
         books_id = [id.select_one("a")["href"][2:-1] for id in soup]
 
-        for book_id in books_id[:2]:
+        for book_id in books_id:
             book_link = urljoin(url, f"/b{book_id}/")
             print(book_link)
 
