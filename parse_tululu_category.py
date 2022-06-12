@@ -12,73 +12,7 @@ import requests
 from bs4 import BeautifulSoup
 from pathvalidate import sanitize_filename
 
-
-def check_for_redirect(response):
-    if response.history:
-        raise requests.HTTPError()
-
-
-def parse_book_page(html_content) -> dict:
-
-    soup = BeautifulSoup(html_content.text, "lxml").select_one(".ow_px_td")
-
-    title_text = soup.select_one("h1").text
-    comments_text = soup.select("div .texts")
-
-    parse_page = {
-        "title": title_text.split("\xa0 :: \xa0")[0].strip(),
-        "author": title_text.split("\xa0 :: \xa0")[1].strip(),
-        "link_img": soup.select_one(".bookimage img")["src"],
-        "comments": [comment.select_one("span.black").text for comment in comments_text],
-        "genres": [genre.text for genre in soup.select("span.d_book a")],
-    }
-
-    return parse_page
-
-
-def download_txt(url: str, book_id: int, filename: str, folder: str = "books/") -> Optional[str]:
-    """Функция для скачивания текстовых файлов.
-    Args:
-        url (str): Cсылка на текст, который хочется скачать.
-        book_id: Номер книги
-        filename (str): Имя файла, с которым сохранять.
-        folder (str): Папка, куда сохранять.
-    Returns:
-        str: Путь до файла, куда сохранён текст.
-    """
-    response = requests.get(f"{url}txt.php", params={"id": book_id})
-    response.raise_for_status()
-
-    check_for_redirect(response)
-
-    Path(folder).mkdir(parents=True, exist_ok=True)
-
-    path_filename = os.path.join(folder, f"{sanitize_filename(filename)}.txt")
-
-    with open(path_filename, "w", encoding="utf-8") as file:
-        file.write(response.text)
-    return path_filename
-
-
-def download_img(url: str, folder: str = "images/") -> Optional[str]:
-    """Функция для скачивания картинок файлов.
-    Args:
-        url (str): Cсылка на картинку, которую хочется скачать.
-        folder (str): Папка, куда сохранять.
-    Returns:
-        str: Путь до файла, куда сохранён текст.
-    """
-    response = requests.get(url)
-    response.raise_for_status()
-
-    Path(folder).mkdir(parents=True, exist_ok=True)
-    filename = urlsplit(url, scheme='', allow_fragments=True).path.split("/")[-1]
-
-    path_filename = os.path.join(folder, filename)
-
-    with open(path_filename, "wb") as file:
-        file.write(response.content)
-    return path_filename
+from main import check_for_redirect, parse_book_page, download_txt, download_img
 
 
 def main() -> None:

@@ -64,25 +64,17 @@ def download_img(url: str, folder: str = "images/") -> Optional[str]:
 
 def parse_book_page(html_content) -> dict:
 
-    soup = BeautifulSoup(html_content.text, "lxml")
+    soup = BeautifulSoup(html_content.text, "lxml").select_one(".ow_px_td")
 
-    title_text = soup.find(id="content").find("h1").text
-    title = title_text.split("\xa0 :: \xa0")[0].strip()
-    author = title_text.split("\xa0 :: \xa0")[1].strip()
-
-    link_img = soup.find("div", class_="bookimage").find("img")["src"]
-
-    comments_text = soup.find("div", id="content").find_all("div", class_="texts")
-    comments = [comment.find("span", class_="black").text for comment in comments_text]
-
-    genres_text = [genre.text for genre in soup.find("div", id="content").find("span", class_="d_book").find_all("a")]
+    title_text = soup.select_one("h1").text
+    comments_text = soup.select("div .texts")
 
     parse_page = {
-        "title": title,
-        "author": author,
-        "link_img": link_img,
-        "comments": comments,
-        "genres_text": genres_text,
+        "title": title_text.split("\xa0 :: \xa0")[0].strip(),
+        "author": title_text.split("\xa0 :: \xa0")[1].strip(),
+        "link_img": soup.select_one(".bookimage img")["src"],
+        "comments": [comment.select_one("span.black").text for comment in comments_text],
+        "genres": [genre.text for genre in soup.select("span.d_book a")],
     }
 
     return parse_page
