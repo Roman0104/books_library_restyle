@@ -146,7 +146,6 @@ def main() -> None:
         json.dump(books_description, json_file, indent=2, ensure_ascii=False)
 
     logger.info("Парсер успешно завершил работу")
-    print("Парсер успешно завершил работу")
 
 
 if __name__ == "__main__":
