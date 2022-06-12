@@ -95,7 +95,6 @@ def main() -> None:
 
         for book_id in book_ids:
             book_link = urljoin(url, f"/b{book_id}/")
-            print(book_link)
 
             try:
                 book_link_response = requests.get(book_link)

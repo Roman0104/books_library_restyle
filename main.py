@@ -68,10 +68,11 @@ def parse_book_page(html_content) -> dict:
 
     title_text = soup.select_one("h1").text
     comments_text = soup.select("div .texts")
+    title, author = title_text.split("\xa0 :: \xa0")
 
     parse_page = {
-        "title": title_text.split("\xa0 :: \xa0")[0].strip(),
-        "author": title_text.split("\xa0 :: \xa0")[1].strip(),
+        "title": title.strip(),
+        "author": author.strip(),
         "link_img": soup.select_one(".bookimage img")["src"],
         "comments": [comment.select_one("span.black").text for comment in comments_text],
         "genres": [genre.text for genre in soup.select("span.d_book a")],
