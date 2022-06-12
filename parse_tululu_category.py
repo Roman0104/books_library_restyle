@@ -1,16 +1,12 @@
 import argparse
 import json
 import logging
-import os
 import sys
 import time
-from pathlib import Path
-from typing import Optional
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
-from pathvalidate import sanitize_filename
 
 from main import check_for_redirect, parse_book_page, download_txt, download_img
 
@@ -95,9 +91,9 @@ def main() -> None:
 
         soup = BeautifulSoup(response.text, "lxml").select(".ow_px_td .d_book")
 
-        books_id = [id.select_one("a")["href"][2:-1] for id in soup]
+        book_ids = [id.select_one("a")["href"][2:-1] for id in soup]
 
-        for book_id in books_id:
+        for book_id in book_ids:
             book_link = urljoin(url, f"/b{book_id}/")
             print(book_link)
 
