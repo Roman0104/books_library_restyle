@@ -2,6 +2,7 @@ import json
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from livereload import Server
+from more_itertools import chunked
 
 
 def main():
@@ -24,8 +25,9 @@ def on_reload():
     template = env.get_template('template.html')
 
     rendered_page = template.render(
-        books_description=books_description,
+        books_description=chunked(books_description, 2),
     )
+
     with open('index.html', 'w', encoding="utf8") as file:
         file.write(rendered_page)
 
