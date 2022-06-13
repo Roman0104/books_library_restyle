@@ -16,3 +16,4 @@ images/
 *.svg
 *.log
 *.json
+temp.py
