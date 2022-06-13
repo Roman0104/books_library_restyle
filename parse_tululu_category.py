@@ -112,6 +112,7 @@ def main() -> None:
 
             book_parse = parse_book_page(book_link_response)
             book_filename = f"{book_id}. {book_parse['title']}"
+            book_parse["link_txt"] = f"{dest_folder}books/{book_filename.replace(':', '')}"
 
             try:
                 if not args.skip_txt:
